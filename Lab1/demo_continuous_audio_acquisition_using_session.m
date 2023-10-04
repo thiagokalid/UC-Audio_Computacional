@@ -39,7 +39,7 @@ s.IsContinuous = false
 hf = figure(1);  
 hp = plot(zeros(1000,1));  
 T = title('Discrete FFT Plot');
-xlabel('Frequency (Hz)')
+xlabel('Frequency (dB Hz)')
 ylabel('|Y(f)|dB')
 grid on;
 
@@ -57,7 +57,7 @@ hl = addlistener(s, 'DataAvailable', plotFFT);
 %%
 delete(hl);
 
-%% Plot the acquired data
+%% Plot the acquired data and its spectrogram:
 figure(2)
 subplot(2,1,1)
 plot(x, y)
@@ -73,12 +73,12 @@ subplot(2,1,2)
 window_time_span = .06;
 L = window_time_span * Fs;
 window = hamming(L);
-colormap bone;
+colormap gray;
 spectrogram(y, window, "yaxis",[],[],Fs);
 title("Spectogram")
 xlabel("Time /[s]")
 ylabel("Frequency /[kHz]")
-ylim([0, 10])
+ylim([0, 1])
 
 %% Save the output
 % Save the vector containing the audio data in a .wave file.
