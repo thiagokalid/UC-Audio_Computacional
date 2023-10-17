@@ -1,4 +1,4 @@
-function [output] = moving_window_analysis(signal, window, slide_step, func)
+function [output] = moving_window_analysis(signal, t_span, window, slide_step, func)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -7,12 +7,14 @@ function [output] = moving_window_analysis(signal, window, slide_step, func)
 signal_length = length(signal);
 window_length_in_samples = length(window);
 half_window_length = (window_length_in_samples - 1)/2;
+period = t_span(2) - t_span(1);
 
 % The window will be centered at the first element in the first iteration.
 % To achieve this effect, '0's will be added to the signal, and then
 % ignored after the result is computed.
 padded_signal = zeros(signal_length + 2 * half_window_length, 1);
 padded_signal(half_window_length + 1: end - half_window_length) = signal;
+padded_t_span = -half_window_length * period:period: (signal_length + half_window_length - 1) * period;
 
 % The output has the same number of elements as the original signal.
 output_length = length(1:slide_step:signal_length);
@@ -23,7 +25,8 @@ for i = 1:slide_step:signal_length
     idx_beg = i;
     idx_end = i + 2 * half_window_length;
     windowed_signal = padded_signal(idx_beg:idx_end) .* window;
-    output(j) = func(windowed_signal);
+    windowed_t_span = padded_t_span(idx_beg:idx_end);
+    output(j) = func(windowed_t_span, windowed_signal);
    
    % if i == 1
    %     figure()

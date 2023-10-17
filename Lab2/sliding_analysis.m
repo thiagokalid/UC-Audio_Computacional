@@ -37,14 +37,17 @@ if (~mod(window_length_in_samples, 2))
     window_length_in_samples = window_length_in_samples + 1;
 end
 window = hamming(window_length_in_samples);
-
+window_rec = rectwin(window_length_in_samples);
 %% Define which funcions will be evaluated through the sliding analysis:
-zcr = moving_window_analysis(y_new, window, wstep, @(m) zerocrossrate(m));
-energy = moving_window_analysis(y_new, window, wstep, @(m) sum(m.^2));
+zcr = moving_window_analysis(y_new, t_new, window, wstep, @(t, x) zerocrossrate(x));
+energy = moving_window_analysis(y_new, t_new, window_rec, wstep, @(t, x) trapz(t, abs(x.^2)));
+f0_min = 70;
+f0_max = 250;
+f0 = moving_window_analysis(y_new, t_new, window_rec, wstep, @(t, x) find_f0(x, Fs_new, f0_min, f0_max));
 
 %% Normalize to plot together:
-energy = (energy - min(energy))/(max(energy) - min(energy));
-zcr = (zcr - min(zcr))/(max(zcr) - min(zcr));
+energy_norm = (energy - min(energy))/(max(energy) - min(energy));
+zcr_norm = (zcr - min(zcr))/(max(zcr) - min(zcr));
 
 %% Plot the resulted value from the sliding analysis.
 
@@ -58,9 +61,83 @@ ylim([-1, 1])
 yyaxis right
 hold on
 t_step = t_new(1:wstep:end);
-plot(t_step, zcr, lineWidth=2, color='r');
-plot(t_step, energy, lineWidth=2, color='k');
+% plot(t_step, zcr_norm, lineWidth=2, color='r');
+% plot(t_step, energy_norm, lineWidth=2, color='k');
+plot(t_step, f0)
+title("Window length = " + num2str(window_length_in_seconds*1e3, 2) + "ms" + ...
+    "Window step = " + num2str(window_step_in_seconds*1e3, 2) + "ms")
 xlim([lower_t, upper_t]);
 ylim([-1, 1])
 
 legend("Signal ampltiude", "Zero-crossing rate", 'Energy')
+
+%%
+%% Define which funcions will be evaluated through the sliding analysis:
+% f0_min = 70;
+% f0_max = 250;
+% t = 0:1/Fs_new:1;
+% x = sin(2*pi*125 * t);
+% find_f0(x, Fs_new, f0_min, f0_max)
+% f0 = moving_window_analysis(y_new, t, window_rec, wstep, @(t, x) find_f0(x, Fs_new, f0_min, f0_max));
+
+%% Normalize to plot together:
+energy_norm = (energy - min(energy))/(max(energy) - min(energy));
+zcr_norm = (zcr - min(zcr))/(max(zcr) - min(zcr));
+f0_norm = (f0 - min(f0))/(max(f0) - min(f0));
+
+%% Read PRAAT results:
+praat_energy = readmatrix('energy.csv');
+praat_energy_tspan = linspace(0, 20.848390022675737, length(praat_energy));
+praat_f0 = readmatrix('f0.csv');
+praat_f0_tspan = linspace(0, 20.848390022675737, length(praat_f0));
+
+%% Plot normalized zero crossing rate, energy and f0
+figure()
+lower_t = 0.3;
+upper_t = 1.0;
+plot(t_new, y_new);
+xlim([lower_t, upper_t]);
+ylim([-1, 1])
+plot(t_new, y_new)
+yyaxis right
+hold on
+t_step = t_new(1:wstep:end);
+plot(t_step, zcr_norm, lineWidth=2, color='r');
+plot(t_step, energy_norm, lineWidth=2, color='k');
+plot(t_step, f0_norm, linewidth=2, color='g')
+title("Window length = " + num2str(window_length_in_seconds*1e3, 2) + "ms" + ...
+    "Window step = " + num2str(window_step_in_seconds*1e3, 2) + "ms")
+xlim([0, 5]);
+ylim([-1, 1])
+legend("Signal ampltiude", "Zero-crossing rate", 'Energy', 'f_0')
+
+
+%%
+
+figure()
+subplot(3,1,1);
+plot(t_step, 20*log(energy), color='r')
+hold on
+grid on
+yyaxis right
+plot(praat_energy_tspan, praat_energy, color='b')
+title("Energyt")
+legend(["MATLAB", "PRAAT"])
+
+subplot(3,1,2);
+plot(t_step, zcr, color='r')
+hold on
+grid on
+yyaxis right
+plot(praat_energy_tspan, praat_energy, color='b')
+title("Zero-crossing rate")
+legend(["MATLAB", "PRAAT"])
+
+subplot(3,1,3);
+plot(t_step, f0, color='r')
+hold on
+grid on
+yyaxis right
+plot(praat_energy_tspan, praat_energy, color='b')
+title("Fundamental Frequency (f0)")
+legend(["MATLAB", "PRAAT"])
