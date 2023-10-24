@@ -133,5 +133,5 @@ title("Comparisson between MATLAB and PRAAT computed short-term energy")
 
 %%
 [output, y_cropped] = play_segment(t_new, y_new, tmin, tmax, Fs_new);
-% output.play()
-audiowrite("ASRF24_5s.wav", y_cropped, Fs)
+output.play()
+% audiowrite("ASRF24_5s.wav", y_cropped, Fs)
