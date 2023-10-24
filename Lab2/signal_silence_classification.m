@@ -65,4 +65,4 @@ grid on
 
 [output, y_cropped] = play_segment(t_new, y_new, tmin, tmax, Fs_new);
 output.play()
-audiowrite("ASRF24_silence.wav", y_cropped, Fs_new)
+% audiowrite("ASRF24_silence.wav", y_cropped, Fs_new)
