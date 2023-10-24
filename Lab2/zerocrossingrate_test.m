@@ -25,7 +25,7 @@ window_rec = rectwin(window_length_in_samples);
 zcr = moving_window_analysis(y, t, window, wstep, @(t, x) zerocrossrate(x));
 
 
-%%
+%% Plot the results:
 
 plot(t * 1e3, y)
 ylim([-2, 2])
