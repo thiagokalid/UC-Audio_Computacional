@@ -28,6 +28,7 @@ for i = 1:slide_step:signal_length
     windowed_t_span = padded_t_span(idx_beg:idx_end);
     output(j) = func(windowed_t_span, windowed_signal);
    
+   % % Plot the window and the windowed signal.
    % if i == 1
    %     figure()
    %     subplot(2, 1, 1)
