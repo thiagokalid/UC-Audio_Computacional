@@ -1,4 +1,6 @@
 % LPC Coefficient Calculation with Sliding Analysis
+clear all
+clc
 
 % Load audio file
 filename = 'ASRF20.wav';
@@ -43,6 +45,9 @@ residual_energy = zeros(num_p_values, 1);
 pre_emphasis_coefficient = 0.98;
 x_to_analyze_preemph = filter([1, -pre_emphasis_coefficient], 1, x_to_analyze);
 
+% Re-synthesize the signal with the original error signal
+reconstructed_signal = zeros(size(x_to_analyze));
+
 for i = 1:num_p_values
     p = p_values(i);
 
@@ -64,28 +69,24 @@ for i = 1:num_p_values
 
         % Calculate error signal
         error_signals(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
-    end
 
-    % Critical listening: Play the original and error signals
-    %soundsc([x_to_analyze, error_signals], fs_new);
-    % Pause to allow listening
-    %pause(2);
-    
+        % Re-synthesize using the LPC coefficients and error signal
+        reconstructed_frame = filter(1, lpc_coeffs(:, j), error_signals(start_idx:end_idx));
+        
+        % Overlap and add
+        reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + reconstructed_frame;
+    end
     % Calculate RMSE
     rmse_values(i) = sqrt(mean((error_signals - filter(lpc_coeffs(:, j), 1, x_to_analyze)).^2));
 
     % Calculate Residual Energy
     residual_energy(i) = sum(error_signals.^2);
 
-    % Re-synthesize using the LPC coefficients and error signal
-    reconstructed_frame = filter(1, lpc_coeffs(:, j), error_signals(start_idx:end_idx));
-    
-    % Overlap and add
-    reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + reconstructed_frame;
+
 end
 
 
-sound(error_signals, fs_new)
+sound(reconstructed_signal, fs_new)
 
 % Plot Residual Energy vs. Number of LPC Parameters
 figure;
