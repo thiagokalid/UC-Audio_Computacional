@@ -73,8 +73,6 @@ for i = 1:num_p_values
 
         % Re-synthesize using the LPC coefficients and error signal
         reconstructed_frame = filter(1, lpc_coeffs(:, j), error_signals(start_idx:end_idx));
-        
-        
 
         % Overlap and add
         reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + reconstructed_frame;
@@ -88,14 +86,18 @@ for i = 1:num_p_values
 
 end
 
+reconstructed_signal = filter(1, [1, pre_emphasis_coefficient], x_to_analyze);
 
-sound(error_signals, fs_new)
+%sound(error_signals, fs_new)
 sound(reconstructed_signal, fs_new)
 
 figure()
 hold on
+grid on
 plot(t_span, reconstructed_signal/max(reconstructed_signal))
 plot(t_span, x_to_analyze)
+xlim([start_time, end_time])
+ylim([-1, 1])
 legend(["Reconstruido", "Original"])
 
 
