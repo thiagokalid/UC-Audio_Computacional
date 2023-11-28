@@ -60,7 +60,7 @@ for i = 1:num_p_values
 
         % LPC Analysis
         %lpc_coeffs(:, j) = lpc(x_frame, p);
-        lpc_coeffs(:, j) = custom_lpc(x_frame, p);
+        lpc_coeffs(:, j) = lpc(x_frame, p);
 
         % Calculate error signal
         error_signals(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
@@ -70,7 +70,7 @@ for i = 1:num_p_values
     %soundsc([x_to_analyze, error_signals], fs_new);
     % Pause to allow listening
     %pause(2);
-
+    
     % Calculate RMSE
     rmse_values(i) = sqrt(mean((error_signals - filter(lpc_coeffs(:, j), 1, x_to_analyze)).^2));
 
@@ -78,14 +78,8 @@ for i = 1:num_p_values
     residual_energy(i) = sum(error_signals.^2);
 end
 
-% Display RMSE values and Residual Energy
-% disp('Results for Different LPC Orders:');
-% disp('p =');
-% disp(p_values(:));
-% disp('RMSE =');
-% disp(rmse_values');
-% disp('Residual Energy =');
-% disp(residual_energy');
+
+sound(error_signals, fs_new)
 
 % Plot Residual Energy vs. Number of LPC Parameters
 figure;
