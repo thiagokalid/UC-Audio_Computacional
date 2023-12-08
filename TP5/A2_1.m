@@ -36,12 +36,6 @@ hamming_window = hamming(window_length);
 % Calculate time vector for the analyzed portion
 t_analyzed = (start_index:end_index - 1) / fs_new;
 
-% Explore the influence of p on the characteristics of the error signal
-p_values = 0:1:20; % Experiment with different LPC orders
-num_p_values = length(p_values);
-rmse_values = zeros(num_p_values, 1);
-residual_energy = zeros(num_p_values, 1);
-
 % Pre-emphasis filter
 pre_emphasis_coefficient = 0.98;
 x_to_analyze_preemph = filter([1, -pre_emphasis_coefficient], 1, x_to_analyze);
@@ -49,58 +43,55 @@ x_to_analyze_preemph = filter([1, -pre_emphasis_coefficient], 1, x_to_analyze);
 % Re-synthesize the signal with the original error signal
 reconstructed_signal = zeros(size(x_to_analyze));
 
-for i = 1:num_p_values
-    p = p_values(i);
+% Number of LPC coefficients:
+p = 20;
 
-    % Initialize arrays to store LPC coefficients and error signals
-    lpc_coeffs = zeros(p+1, num_frames);
-    error_signals = zeros(num_samples, 1);
+% Initialize arrays to store LPC coefficients and error signals
+lpc_coeffs1 = zeros(p+1, num_frames);
+lpc_coeffs2 = zeros(p+1, num_frames);
+error_signal1 = zeros(num_samples, 1);
+error_signal2 = zeros(num_samples, 1);
+x_est1 = zeros(num_samples, 1);
+x_est2 = zeros(num_samples, 1);
 
-    % Perform LPC analysis with sliding window
-    for j = 1:num_frames
-        start_idx = (j-1) * (window_length - overlap_length) + 1;
-        end_idx = start_idx + window_length - 1;
+% Perform LPC analysis with sliding window
+for j = 1:num_frames
+    start_idx = (j-1) * (window_length - overlap_length) + 1;
+    end_idx = start_idx + window_length - 1;
 
-        % Extract the current frame
-        x_frame = x_to_analyze_preemph(start_idx:end_idx) .* hamming_window;
+    % Extract the current frame
+    x_frame1 = x_to_analyze_preemph(start_idx:end_idx) .* hamming_window;
+    x_frame2 = x_to_analyze(start_idx:end_idx) .* hamming_window;
 
-        % LPC Analysis
-        %lpc_coeffs(:, j) = lpc(x_frame, p);
-        lpc_coeffs(:, j) = lpc(x_frame, p);
+    % LPC Analysis
+    lpc_coeffs1(:, j) = lpc(x_frame1, p);
+    lpc_coeffs2(:, j) = lpc(x_frame2, p);
 
-        % Calculate error signal
-        error_signals(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
+    % Calculate error signal
+    error_signal1(start_idx:end_idx) = filter(lpc_coeffs1(:, j), 1, x_frame1);
+    error_signal2(start_idx:end_idx) = filter(lpc_coeffs2(:, j), 1, x_frame2);
 
-        % Re-synthesize using the LPC coefficients and error signal
-        reconstructed_frame = filter(1, lpc_coeffs(:, j), pulse_train);
-
-        % Overlap and add
-        reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + reconstructed_frame;
-    end
-    % Calculate RMSE
-    rmse_values(i) = sqrt(mean((error_signals - filter(lpc_coeffs(:, j), 1, x_to_analyze)).^2));
-
-    % Calculate Residual Energy
-    residual_energy(i) = sum(error_signals.^2);
-
+    % Re-synthesize using the LPC coefficients
+    x_est1(start_idx:end_idx) = filter(1, lpc_coeffs1(:, j), error_signal1(start_idx:end_idx));
+    x_est2(start_idx:end_idx) = filter(1, lpc_coeffs2(:, j), error_signal2(start_idx:end_idx));
 
 end
 
-reconstructed_signal = filter(1, [1, pre_emphasis_coefficient], x_to_analyze);
-
-sound(x_to_analyze, fs_new)
-sleep(1)
-sound(reconstructed_signal, fs_new)
+% De-emphasis:
+x_est_preemph = filter(1, [1, -pre_emphasis_coefficient], x_est1);
 
 figure()
 hold on
 grid on
-plot(t_span, reconstructed_signal/max(reconstructed_signal))
-plot(t_span, x_to_analyze)
+plot(t_span, x_to_analyze, color='red')
+plot(t_span, x_est_preemph, color='blue')
 xlim([start_time, end_time])
-ylim([-1, 1])
-xlabel("Time in s")
+xlabel("Time in seconds")
 ylabel("Amplitude")
-legend(["Reconstruido", "Original"])
+ylim([-1, 1])
+legend(["Original", ...
+    "Estimated with pre-emphasis."])
+
+audiowrite("error_generated_signal.wav", x_est_preemph, fs_new)
 
 

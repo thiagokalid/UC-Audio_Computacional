@@ -23,7 +23,7 @@ num_frames = floor((num_samples - overlap_length) / (window_length - overlap_len
 
 % Initialize arrays to store LPC coefficients and error signals
 lpc_coeffs = zeros(p+1, num_frames);
-error_signals = zeros(num_samples, 1);
+error_signal = zeros(num_samples, 1);
 
 % Hamming window for LPC analysis
 hamming_window = hamming(window_length);
@@ -40,8 +40,10 @@ for i = 1:num_frames
     lpc_coeffs(:, i) = lpc(x_frame, p);
     
     % Calculate error signal
-    error_signals(start_idx:end_idx) = filter(lpc_coeffs(:, i), 1, x_frame);
+    error_signal(start_idx:end_idx) = filter(lpc_coeffs(:, i), 1, x_frame);
 end
+
+sound(error_signal, fs_new)
 
 % Display LPC coefficients and plot the error signal
 figure;
@@ -52,11 +54,8 @@ xlabel('Time (s)');
 ylabel('Coefficient Value');
 
 subplot(2,1,2);
-t = (0:length(error_signals)-1)/fs_new;
-plot(t, error_signals);
+t = (0:length(error_signal)-1)/fs_new;
+plot(t, error_signal);
 title('Error Signal');
 xlabel('Time (s)');
 ylabel('Amplitude');
-
-% Save LPC coefficients and error signal for later use
-save('lpc_analysis_results.mat', 'lpc_coeffs', 'error_signals');

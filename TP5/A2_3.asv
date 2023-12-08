@@ -84,15 +84,15 @@ for j = 1:num_frames
     error_signal(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
 
     % Calculate the variance of the error:
-    signal_power = sum(x_frame.^2);
+    error_variance = var(error_signal(start_idx:end_idx));
     
     segmentSize = end_idx - start_idx + 1;
     if (f0_vector(start_idx) > 0)
         % If it is a voiced segment:
         step = round(fs_new/f0_vector(start_idx));
         src_signal = zeros(segmentSize, 1);
-        idx = offset+1:step:segmentSize;
-        offset = step + idx(end) - segmentSize;
+        idx = offset+1:step:end_idx-start_idx;
+        offset = step + idx(end) - nw2;
         src_signal(idx) = sqrt(step);
     else
         % If it is a unvoiced segment:
@@ -102,8 +102,7 @@ for j = 1:num_frames
     end
 
     % Re-synthesize using the LPC coefficients and noise/pulse signal:
-    reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + ...
-        filter(1, [1; lpc_coeffs(2:end, j)], signal_power * src_signal);
+    reconstructed_signal(start_idx:end_idx) = reconstructed_signal(start_idx:end_idx) + filter([0; -lpc_coeffs(2:end, j)], 1, src_signal);
 
 end
 
@@ -111,20 +110,14 @@ end
 reconstructed_signal = filter(1, [1, -pre_emphasis_coefficient], reconstructed_signal);
 
 soundsc(reconstructed_signal, fs_new)
-num2str(sum((x_to_analyze - reconstructed_signal).^2), 4)
 
 figure()
 hold on
 grid on
-plot(t_span, reconstructed_signal/max(reconstructed_signal), color='blue')
-plot(t_span, x_to_analyze, color='red')
-plot(t_analyzed, f0_vector/max(f0_vector))
+plot(t_span, reconstructed_signal/max(reconstructed_signal))
+plot(t_span, x_to_analyze)
 xlim([start_time, end_time])
 ylim([-1, 1])
-xlabel("Time in seconds")
-ylabel("Amplitude")
-legend(["Reconstructed", "Original", "1=Voiced, 0=Unvoiced)"])
-
-audiowrite("generated_excitation_signal.wav", reconstructed_signal, fs_new)
+legend(["Reconstruido", "Original"])
 
 

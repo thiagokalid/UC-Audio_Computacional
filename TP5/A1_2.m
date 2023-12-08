@@ -1,4 +1,6 @@
 % LPC Coefficient Calculation with Sliding Analysis
+clear all
+clc
 
 % Load audio file
 filename = 'ASRF20.wav';
@@ -45,10 +47,12 @@ x_to_analyze_preemph = filter([1, -pre_emphasis_coefficient], 1, x_to_analyze);
 
 for i = 1:num_p_values
     p = p_values(i);
+    p = 20
 
     % Initialize arrays to store LPC coefficients and error signals
     lpc_coeffs = zeros(p+1, num_frames);
-    error_signals = zeros(num_samples, 1);
+    error_signal = zeros(num_samples, 1);
+    x_est = zeros(num_samples, 1);
 
     % Perform LPC analysis with sliding window
     for j = 1:num_frames
@@ -59,27 +63,30 @@ for i = 1:num_p_values
         x_frame = x_to_analyze_preemph(start_idx:end_idx) .* hamming_window;
 
         % LPC Analysis
-        %lpc_coeffs(:, j) = lpc(x_frame, p);
         lpc_coeffs(:, j) = lpc(x_frame, p);
 
         % Calculate error signal
-        error_signals(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
+        error_signal(start_idx:end_idx) = filter(lpc_coeffs(:, j), 1, x_frame);
+
+        % Calculate the estimated signal
+        x_est(start_idx:end_idx) = filter([0, -lpc_coeffs(2:end, j)'], 1, x_frame);
     end
 
     % Critical listening: Play the original and error signals
-    %soundsc([x_to_analyze, error_signals], fs_new);
+    disp(i)
+    soundsc([x_to_analyze], fs_new);
     % Pause to allow listening
-    %pause(2);
-    
-    % Calculate RMSE
-    rmse_values(i) = sqrt(mean((error_signals - filter(lpc_coeffs(:, j), 1, x_to_analyze)).^2));
-
+    pause(2);
+   
     % Calculate Residual Energy
-    residual_energy(i) = sum(error_signals.^2);
+    residual_energy(i) = sum(error_signal.^2);
 end
 
 
-sound(error_signals, fs_new)
+sound(x_est, fs_new)
+
+% De-emphasis audio:
+x_est_deemph = filter(1, [1, -pre_emphasis_coefficient], x_est);
 
 % Plot Residual Energy vs. Number of LPC Parameters
 figure;
